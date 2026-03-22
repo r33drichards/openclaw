@@ -53,6 +53,9 @@ const unitBehaviorIsolatedFiles = existingUnitConfigFiles(behaviorManifest.unit.
 const unitSingletonIsolatedFiles = existingUnitConfigFiles(behaviorManifest.unit.singletonIsolated);
 const unitThreadSingletonFiles = existingUnitConfigFiles(behaviorManifest.unit.threadSingleton);
 const unitVmForkSingletonFiles = existingUnitConfigFiles(behaviorManifest.unit.vmForkSingleton);
+const extensionSingletonIsolatedFiles = existingFiles(
+  behaviorManifest.extensions.singletonIsolated,
+);
 const unitBehaviorOverrideSet = new Set([
   ...unitBehaviorIsolatedFiles,
   ...unitSingletonIsolatedFiles,
@@ -418,6 +421,10 @@ const unitFastExcludedFileSet = new Set(unitFastExcludedFiles);
 const unitFastCandidateFiles = allKnownUnitFiles.filter(
   (file) => !unitFastExcludedFileSet.has(file),
 );
+const extensionSingletonExcludedFileSet = new Set(extensionSingletonIsolatedFiles);
+const extensionSharedCandidateFiles = allKnownTestFiles.filter(
+  (file) => file.startsWith("extensions/") && !extensionSingletonExcludedFileSet.has(file),
+);
 const defaultUnitFastLaneCount = isCI && !isWindows ? 3 : 1;
 const unitFastLaneCount = Math.max(
   1,
@@ -494,6 +501,10 @@ const unitThreadEntries =
         },
       ]
     : [];
+const extensionSingletonEntries = extensionSingletonIsolatedFiles.map((file) => ({
+  name: `${path.basename(file, ".test.ts")}-extensions-isolated`,
+  args: ["vitest", "run", "--config", "vitest.extensions.config.ts", "--pool=forks", file],
+}));
 const baseRuns = [
   ...(shouldSplitUnitRuns
     ? [
@@ -561,6 +572,15 @@ const baseRuns = [
     ? [
         {
           name: "extensions",
+          env:
+            extensionSharedCandidateFiles.length > 0
+              ? {
+                  OPENCLAW_VITEST_INCLUDE_FILE: writeTempJsonArtifact(
+                    "vitest-extensions-include",
+                    extensionSharedCandidateFiles,
+                  ),
+                }
+              : undefined,
           args: [
             "vitest",
             "run",
@@ -569,6 +589,7 @@ const baseRuns = [
             ...(useVmForks ? ["--pool=vmForks"] : []),
           ],
         },
+        ...extensionSingletonEntries,
       ]
     : []),
   ...(includeGatewaySuite

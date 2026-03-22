@@ -30,12 +30,16 @@ const normalizeManifestEntries = (entries) =>
 export function loadTestRunnerBehavior() {
   const raw = tryReadJsonFile(behaviorManifestPath, {});
   const unit = raw.unit ?? {};
+  const extensions = raw.extensions ?? {};
   return {
     unit: {
       isolated: normalizeManifestEntries(unit.isolated ?? []),
       singletonIsolated: normalizeManifestEntries(unit.singletonIsolated ?? []),
       threadSingleton: normalizeManifestEntries(unit.threadSingleton ?? []),
       vmForkSingleton: normalizeManifestEntries(unit.vmForkSingleton ?? []),
+    },
+    extensions: {
+      singletonIsolated: normalizeManifestEntries(extensions.singletonIsolated ?? []),
     },
   };
 }
