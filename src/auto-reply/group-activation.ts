@@ -1,5 +1,3 @@
-import { normalizeCommandBody } from "./commands-registry.js";
-
 export type GroupActivationMode = "mention" | "always";
 
 export function normalizeGroupActivation(raw?: string | null): GroupActivationMode | undefined {
@@ -24,7 +22,7 @@ export function parseActivationCommand(raw?: string): {
   if (!trimmed) {
     return { hasCommand: false };
   }
-  const normalized = normalizeCommandBody(trimmed);
+  const normalized = trimmed.replace(/^\/([^@\s:]+)@[^:\s]+/, "/$1");
   const match = normalized.match(/^\/activation(?:\s+([a-zA-Z]+))?\s*$/i);
   if (!match) {
     return { hasCommand: false };
